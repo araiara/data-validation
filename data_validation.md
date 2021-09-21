@@ -1,3 +1,4 @@
+
 ## Data Validation
 ### Create and Populated Database Tables
 #### Table customer
@@ -106,7 +107,8 @@ CSV HEADER;
 #### Create table employee
 ~~~~ sql
 CREATE TABLE IF NOT EXISTS employee (
-  client_employee_id VARCHAR(255) PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
+  client_employee_id VARCHAR(255) UNIQUE,
   department_id VARCHAR(255) NOT NULL,
   first_name VARCHAR(255) NOT NULL,
   last_name VARCHAR(255) NOT NULL,
@@ -123,7 +125,7 @@ CREATE TABLE IF NOT EXISTS employee (
   is_active BOOL NOT NULL
 );
 
-COPY employee
+COPY employee (client_employee_id, department_id, first_name, last_name, manager_employee_id, salary, hire_date, term_date, term_reason, dob, fte, fte_status, weekly_hours, role, is_active)
 FROM 'F:\lf-data-engineering-internship\week-4-validation\dataset\employee.csv'
 DELIMITER ','
 CSV HEADER;
@@ -188,11 +190,12 @@ FROM (
   SELECT COUNT(*)
   FROM employee
   GROUP BY client_employee_id
-  HAVING COUNT(*) = 2
+  HAVING COUNT(*) > 1
 ) AS test_result;
 ~~~~
 > Remarks: Test passed!
 ##### 2. Check if part time employees are assigned other fte_status.
+Assume part time employees have fte < 7.
 ~~~~ sql
 SELECT
   COUNT(*) AS impacted_record_count,
@@ -201,10 +204,10 @@ SELECT
     ELSE 'passed'
   END AS test_result
 FROM employee
-where fte < 1 and fte_status <> 'Part Time';
+WHERE fte < 0.7 
+  AND fte_status <> 'Part Time';
 ~~~~
-> Remarks: Test failed!
-> 6 Part time employees assigned to other fte_status were found.
+> Remarks: Test passed!
 ##### 3. Check if termed employees are marked as active.
 ~~~~ sql
 SELECT
@@ -214,7 +217,8 @@ SELECT
     ELSE 'passed'
   END AS test_result
 FROM employee
-WHERE term_date IS NULL AND is_active IS FALSE;
+WHERE term_date IS NOT NULL 
+  AND is_active IS TRUE;
 ~~~~
 > Remarks: Test passed!
 ##### 4. Check if the same product is listed more than once in a single bill.
@@ -242,13 +246,13 @@ SELECT
     ELSE 'passed'
   END AS test_result
 FROM (
-  SELECT customer_id FROM sales
+  SELECT DISTINCT customer_id FROM sales
   EXCEPT
   SELECT customer_id FROM customer
 ) test_result;
 ~~~~
-> Remarks: 6. Test passed!
-##### Check if there are any records where updated_by is not empty but updated_date is empty.
+> Remarks: Test passed!
+##### 6. Check if there are any records where updated_by is not empty but updated_date is empty.
 ~~~~ sql
 SELECT
   COUNT(*) AS impacted_record_count,
@@ -258,7 +262,7 @@ SELECT
   END AS test_result
 FROM sales
 WHERE updated_by IS NOT NULL 
-AND updated_date IS NULL;
+  AND updated_date IS NULL;
 ~~~~
 > Remarks: Test failed!
 > 57 records having updated_by value but NULL updated_date was found.
@@ -282,12 +286,9 @@ SELECT
     WHEN COUNT(*) > 0 THEN 'failed'
     ELSE 'passed'
   END AS test_result
-FROM timesheet t
-JOIN timesheet_raw tr
-ON t.employee_id = tr.employee_id
-AND t.shift_date = CAST(tr.punch_apply_date AS DATE)
-AND tr.paycode = 'ON_CALL'
-AND t.was_on_call IS NOT TRUE;
+FROM timesheet
+WHERE on_call_hour = 0
+  AND was_on_call IS TRUE;
 ~~~~
 > Remarks: Test passed!
 ##### 9. Check if the break is true for employees who have not taken a break at all.
@@ -298,17 +299,18 @@ SELECT
     WHEN COUNT(*) > 0 THEN 'failed'
     ELSE 'passed'
   END AS test_result
-FROM timesheet t
-JOIN timesheet_raw tr
-ON t.employee_id = tr.employee_id
-AND t.shift_date = CAST(tr.punch_apply_date AS DATE)
-AND tr.paycode <> 'BREAK'
-AND t.shift_start_time = CAST(tr.punch_in_time AS TIME)
-AND t.shift_end_time = CAST(tr.punch_out_time AS TIME)
-AND t.has_taken_break IS TRUE;
+FROM timesheet
+WHERE break_hour = 0
+  AND has_taken_break IS TRUE;
 ~~~~
 > Remarks: Test passed!
 ##### 10. Check if the night shift is not assigned to the employees working on the night shift.
+Assume
+Shift | Start Time | End Time
+- | - | -
+Day | 6:00 | 14:00
+Evening | 14:00 | 22:00
+Night | 22:00 | 6:00
 ~~~~ sql
 SELECT 
   COUNT(*) AS impacted_record_count,
@@ -318,7 +320,7 @@ SELECT
   END AS test_result
 FROM timesheet
 WHERE shift_start_time BETWEEN '22:00' AND '6:00'
-AND shift_type <> 'Night';
+  AND shift_type <> 'Night';
 ~~~~
 > Remarks: Test passed!
 #### 11. Check if username contains other than alphanumeric and underscore characters.
@@ -342,7 +344,7 @@ SELECT
     ELSE 'passed'
   END AS test_result
 FROM (
-  SELECT product_id FROM sales
+  SELECT DISTINCT product_id FROM sales
   EXCEPT
   SELECT product_id FROM product
 ) test_result;
@@ -399,10 +401,10 @@ SELECT
     ELSE 'passed'
   END AS test_result
 FROM employee
-where fte < 1 and fte_status = 'Full Time';
+WHERE fte < 0.7 
+  AND fte_status = 'Full Time';
 ~~~~
-> Remarks: Test failed!
-> 6 records were found of non full time employees that were assigned full time FTE status.
+> Remarks: Test passed!
 #### 17. Check if the day shift is assigned to the employees working on the shifts other than day shift.
 ~~~~ sql
 SELECT 
@@ -413,6 +415,6 @@ SELECT
   END AS test_result
 FROM timesheet
 WHERE shift_start_time NOT BETWEEN '6:00' AND '10:00'
-AND shift_type = 'Day';
+  AND shift_type = 'Day';
 ~~~~
 > Remarks: Test passed!
