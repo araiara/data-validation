@@ -307,7 +307,7 @@ WHERE break_hour = 0
 ##### 10. Check if the night shift is not assigned to the employees working on the night shift.
 Assume
 Shift | Start Time | End Time
-- | - | -
+---- | ---- | ----
 Day | 6:00 | 14:00
 Evening | 14:00 | 22:00
 Night | 22:00 | 6:00
