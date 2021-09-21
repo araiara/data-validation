@@ -67,8 +67,8 @@ CREATE TABLE IF NOT EXISTS sales (
   created_date TIMESTAMP NOT NULL,  
   updated_date TIMESTAMP,
   CONSTRAINT fk_sales_customer_id
-	FOREIGN KEY (customer_id)
-	REFERENCES customer(customer_id),
+  FOREIGN KEY (customer_id)
+  REFERENCES customer(customer_id),
   CONSTRAINT fk_sales_product_id
     FOREIGN KEY (product_id)
     REFERENCES product(product_id)
@@ -131,9 +131,9 @@ CSV HEADER;
 #### Create table timesheet_raw
 ~~~~ sql
 CREATE TABLE IF NOT EXISTS timesheet_raw (
-  employee_id	VARCHAR(500),
-  cost_center	VARCHAR(500),
-  punch_in_time VARCHAR(500),	
+  employee_id VARCHAR(500),
+  cost_center VARCHAR(500),
+  punch_in_time VARCHAR(500), 
   punch_out_time VARCHAR(500),
   punch_apply_date VARCHAR(500),
   hours_worked VARCHAR(500),
@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS timesheet (
   employee_id VARCHAR(255) NOT NULL,
   department_id VARCHAR(255) NOT NULL,
   shift_start_time TIME,
-  shift_end_time TIME,	
+  shift_end_time TIME,  
   shift_date DATE NOT NULL,
   shift_type VARCHAR(255) NOT NULL,
   hours_worked FLOAT NOT NULL,
@@ -176,7 +176,7 @@ CSV HEADER;
 ~~~~
 
 ### Data Validation
-#####  Check if a single employee is listed twice with multiple ids.
+#####  1. Check if a single employee is listed twice with multiple ids.
 ~~~~ sql
 SELECT
   COUNT(*) AS impacted_record_count,
@@ -185,15 +185,15 @@ SELECT
     ELSE 'passed'
   END AS test_result
 FROM (
-  SELECT DISTINCT client_employee_id
+  SELECT client_employee_id
   FROM employee
   EXCEPT
-  SELECT client_employee_id
+  SELECT DISTINCT client_employee_id
   FROM employee
 ) AS test_result;
 ~~~~
 > Remarks: Test passed!
-##### Check if part time employees are assigned other fte_status.
+##### 2. Check if part time employees are assigned other fte_status.
 ~~~~ sql
 SELECT
   COUNT(*) AS impacted_record_count,
@@ -202,10 +202,11 @@ SELECT
     ELSE 'passed'
   END AS test_result
 FROM employee
-where fte <= 0.6 and fte_status <> 'Part Time';
+where fte < 1 and fte_status <> 'Part Time';
 ~~~~
-> Remarks: Test passed!
-##### Check if termed employees are marked as active.
+> Remarks: Test failed!
+> 6 Part time employees assigned to other fte_status were found.
+##### 3. Check if termed employees are marked as active.
 ~~~~ sql
 SELECT
   COUNT(*) AS impacted_record_count,
@@ -217,7 +218,7 @@ FROM employee
 WHERE term_date IS NULL AND is_active IS FALSE;
 ~~~~
 > Remarks: Test passed!
-##### Check if the same product is listed more than once in a single bill.
+##### 4. Check if the same product is listed more than once in a single bill.
 ~~~~ sql
 SELECT
   COUNT(*) AS impacted_record_count,
@@ -233,7 +234,7 @@ FROM (
 ) AS test_result;
 ~~~~
 > Remarks: Test passed!
-##### Check if the customer_id in the sales table does not exist in the customer table.
+##### 5. Check if the customer_id in the sales table does not exist in the customer table.
 ~~~~ sql
 SELECT
   COUNT(*) AS impacted_record_count,
@@ -247,7 +248,7 @@ FROM (
   SELECT customer_id FROM customer
 ) test_result;
 ~~~~
-> Remarks: Test passed!
+> Remarks: 6. Test passed!
 ##### Check if there are any records where updated_by is not empty but updated_date is empty.
 ~~~~ sql
 SELECT
@@ -261,8 +262,8 @@ WHERE updated_by IS NOT NULL
 AND updated_date IS NULL;
 ~~~~
 > Remarks: Test failed!
-> Records having updated_by value but NULL updated_date was found.
-##### Check if there are any hours worked that are greater than 24 hours.
+> 57 records having updated_by value but NULL updated_date was found.
+##### 7. Check if there are any hours worked that are greater than 24 hours.
 ~~~~ sql
 SELECT
   COUNT(*) AS impacted_record_count,
@@ -274,7 +275,7 @@ FROM timesheet
 WHERE hours_worked > 24;
 ~~~~
 > Remarks: Test passed!
-##### Check if non on-call employees are set as on-call.
+##### 8. Check if non on-call employees are set as on-call.
 ~~~~ sql
 SELECT 
   COUNT(*) AS impacted_record_count,
@@ -290,7 +291,7 @@ AND tr.paycode = 'ON_CALL'
 AND t.was_on_call IS NOT TRUE;
 ~~~~
 > Remarks: Test passed!
-##### Check if the break is true for employees who have not taken a break at all.
+##### 9. Check if the break is true for employees who have not taken a break at all.
 ~~~~ sql
 SELECT 
   COUNT(*) AS impacted_record_count,
@@ -308,7 +309,7 @@ AND t.shift_end_time = CAST(tr.punch_out_time AS TIME)
 AND t.has_taken_break IS TRUE;
 ~~~~
 > Remarks: Test passed!
-##### Check if the night shift is not assigned to the employees working on the night shift.
+##### 10. Check if the night shift is not assigned to the employees working on the night shift.
 ~~~~ sql
 SELECT 
   COUNT(*) AS impacted_record_count,
@@ -319,5 +320,32 @@ SELECT
 FROM timesheet
 WHERE shift_start_time BETWEEN '22:00' AND '6:00'
 AND shift_type <> 'Night';
+~~~~
+> Remarks: Test passed!
+#### 11. Check if username contains other than alphanumeric and underscore characters.
+~~~~ sql
+SELECT
+  COUNT(*) AS impacted_record_count,
+  CASE
+    WHEN COUNT(*) > 0 THEN 'failed'
+    ELSE 'passed'
+  END AS test_result
+FROM customer
+WHERE user_name NOT SIMILAR TO '[a-z]+/_*[a-z]+' ESCAPE '/';
+~~~~
+> Remarks: Test passed!
+#### 12. Check if all the product_id in sales are present in the product table.
+~~~~ sql
+SELECT
+  COUNT(*) AS impacted_record_count,
+  CASE
+    WHEN COUNT(*) > 0 THEN 'failed'
+    ELSE 'passed'
+  END AS test_result
+FROM (
+  SELECT product_id FROM sales
+  EXCEPT
+  SELECT product_id FROM product
+) test_result;
 ~~~~
 > Remarks: Test passed!
