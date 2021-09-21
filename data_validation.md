@@ -185,11 +185,10 @@ SELECT
     ELSE 'passed'
   END AS test_result
 FROM (
-  SELECT client_employee_id
+  SELECT COUNT(*)
   FROM employee
-  EXCEPT
-  SELECT DISTINCT client_employee_id
-  FROM employee
+  GROUP BY client_employee_id
+  HAVING COUNT(*) = 2
 ) AS test_result;
 ~~~~
 > Remarks: Test passed!
@@ -347,5 +346,73 @@ FROM (
   EXCEPT
   SELECT product_id FROM product
 ) test_result;
+~~~~
+> Remarks: Test passed!
+#### 13. Check if multiple products have the exact same name or description.
+~~~~ sql
+SELECT 
+  COUNT(*) AS impacted_record_count,
+  CASE
+    WHEN COUNT(*) > 0 THEN 'failed'
+    ELSE 'passed'
+  END AS test_result
+FROM (
+  SELECT COUNT(*), product_name, description
+  FROM product 
+  GROUP BY product_name, description
+  HAVING COUNT(*) > 1
+) test_result;
+~~~~
+> Remarks: Test failed!
+> 6 records were found with duplicate product name or description.
+#### 14. Check if any updated_date precedes created_date in the sales table.
+~~~~ sql
+SELECT
+  COUNT(*) AS impacted_record_count,
+  CASE
+    WHEN COUNT(*) > 0 THEN 'failed'
+    ELSE 'passed'
+  END AS test_result 
+FROM sales
+WHERE updated_date < created_date;
+~~~~
+> Remarks: Test failed!
+> 10 records were found where the updated_date preceeded created_date.
+#### 15. Check if there are any negative product quantities in a sales bill.
+~~~~ sql
+SELECT
+  COUNT(*) AS impacted_record_count,
+  CASE
+    WHEN COUNT(*) > 0 THEN 'failed'
+    ELSE 'passed'
+  END AS test_result 
+FROM sales
+WHERE qty < 0;
+~~~~
+> Remarks: Test passed!
+#### 16. Check if non full time employees are assigned full time FTE status.
+~~~~ sql
+SELECT
+  COUNT(*) AS impacted_record_count,
+  CASE
+    WHEN COUNT(*) > 0 THEN 'failed'
+    ELSE 'passed'
+  END AS test_result
+FROM employee
+where fte < 1 and fte_status = 'Full Time';
+~~~~
+> Remarks: Test failed!
+> 6 records were found of non full time employees that were assigned full time FTE status.
+#### 17. Check if the day shift is assigned to the employees working on the shifts other than day shift.
+~~~~ sql
+SELECT 
+  COUNT(*) AS impacted_record_count,
+  CASE
+    WHEN COUNT(*) > 0 THEN 'failed'
+    ELSE 'passed'
+  END AS test_result
+FROM timesheet
+WHERE shift_start_time NOT BETWEEN '6:00' AND '10:00'
+AND shift_type = 'Day';
 ~~~~
 > Remarks: Test passed!
