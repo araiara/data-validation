@@ -286,9 +286,13 @@ SELECT
     WHEN COUNT(*) > 0 THEN 'failed'
     ELSE 'passed'
   END AS test_result
-FROM timesheet
-WHERE on_call_hour = 0
-  AND was_on_call IS TRUE;
+FROM timesheet t
+JOIN timesheet_raw tr
+  ON t.employee_id = tr.employee_id
+WHERE t.shift_date = CAST(tr.punch_apply_date AS DATE)
+  AND tr.paycode <> 'ON_CALL'
+  AND t.was_on_call = TRUE
+  AND tr.punch_in_time IS NULL;
 ~~~~
 > Remarks: Test passed!
 ##### 9. Check if the break is true for employees who have not taken a break at all.
@@ -299,9 +303,15 @@ SELECT
     WHEN COUNT(*) > 0 THEN 'failed'
     ELSE 'passed'
   END AS test_result
-FROM timesheet
-WHERE break_hour = 0
-  AND has_taken_break IS TRUE;
+FROM (
+SELECT t.employee_id, shift_date, paycode, has_taken_break
+FROM timesheet t
+JOIN timesheet_raw tr
+  ON t.employee_id = tr.employee_id
+WHERE t.shift_date = CAST(tr.punch_apply_date AS DATE)
+  AND tr.paycode <> 'BREAK'
+  AND t.has_taken_break IS TRUE
+) test_result;
 ~~~~
 > Remarks: Test passed!
 ##### 10. Check if the night shift is not assigned to the employees working on the night shift.
