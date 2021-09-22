@@ -251,4 +251,4 @@ WHERE p.tax_percent <> s.tax_pc;
 > 915 records found.
 
 ### Test Results
-![]('test_result.PNG')
+![](test_result.PNG)

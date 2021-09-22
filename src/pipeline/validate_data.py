@@ -3,6 +3,12 @@ from src.utils.create_connection import *
 from src.utils.db_table import *
 
 def validate_data(validate_data_info):
+    """
+    Run the test cases.
+    params:
+    param 'validate_table_info' create table info
+    type 'list'
+    """
     flag = True
     for validate_info in validate_data_info:
         try:            
