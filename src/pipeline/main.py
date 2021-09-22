@@ -43,7 +43,7 @@ def validate_data_info():
                 'Check if a terminated employee has timesheet record after being terminated.',
                 'Check if there are multiple timesheet record of an employee in a day.',
                 'Check if the attendance is true for employee whose work, charge, and on call hour is 0.',
-                'Check if the number of absent teammates is greater than the number of employees for a day.'
+                'Check if an employee works in multiple departments in a the same time shift.'
             ],
             'sql_validate': [
                 '../sql/validate_timesheet_case_i.sql',
@@ -58,7 +58,7 @@ def validate_data_info():
             'test_table': 'product',
             'test_case': [
                 'Check if the price is greater than MRP.',
-                'Check if the duplicate product names do not have same price.',
+                'Check if the duplicate product from same brand names do not have same price.',
                 'Check if the product quantity in the sales table is more than the product quantity.',
                 'Check if the price in the sales table do not match with the product price.'
             ],

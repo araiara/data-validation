@@ -9,4 +9,4 @@ SELECT
     ELSE 'passed'
   END AS test_result
 FROM sales
-WHERE CAST(gross_price AS INT) <> CAST(qty * price AS INT);
+WHERE ROUND(gross_price::NUMERIC, 2) <> ROUND((qty * price)::NUMERIC, 2);

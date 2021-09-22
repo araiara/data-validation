@@ -11,6 +11,6 @@ SELECT
 FROM (
   SELECT bill_no, COUNT(DISTINCT customer_id)
   FROM sales
-  GROUP BY bill_no, customer_id
+  GROUP BY bill_no
   HAVING COUNT(DISTINCT customer_id) > 1
 ) test_result;

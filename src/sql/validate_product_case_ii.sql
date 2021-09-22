@@ -9,8 +9,8 @@ SELECT
     ELSE 'passed'
   END AS test_result
 FROM (
-  SELECT product_name, COUNT(DISTINCT price)
+  SELECT product_name, brand, COUNT(DISTINCT price) 
   FROM product
-  GROUP BY product_name
+  GROUP BY product_name, brand
   HAVING COUNT(DISTINCT price) > 1
 ) test_result;

@@ -112,7 +112,7 @@ WHERE attendance IS TRUE
   AND on_call_hour = 0;
 ~~~~
 > Remarks: Test passed!
-#####  4. Check if the number of absent teammates is greater than the number of employees for a day.
+#####  4. Check if an employee works in multiple departments in the same time shift.
 ~~~~ sql
 SELECT
   COUNT(*) AS impacted_record_count,
@@ -121,10 +121,10 @@ SELECT
     ELSE 'passed'
   END AS test_result
 FROM (
-  SELECT COUNT(employee_id), shift_date
+  SELECT employee_id
   FROM timesheet
-  GROUP BY shift_date
-  HAVING AVG(num_teammates_absent) > COUNT(employee_id)
+  GROUP BY employee_id, shift_start_time, shift_end_time, shift_date
+  HAVING COUNT(department_id) > 1
 ) test_result;
 ~~~~
 > Remarks: Test passed!
@@ -143,7 +143,7 @@ WHERE price > mrp;
 ~~~~
 > Remarks: Test failed!
 > 1 record found.
-#####  2. Check if the duplicate product names do not have same price.
+#####  2. Check if the duplicate product from same brand names do not have same price.
 ~~~~ sql
 SELECT
   COUNT(*) AS impacted_record_count,
@@ -152,9 +152,9 @@ SELECT
     ELSE 'passed'
   END AS test_result
 FROM (
-  SELECT product_name, COUNT(DISTINCT price)
+  SELECT product_name, brand, COUNT(DISTINCT price) 
   FROM product
-  GROUP BY product_name
+  GROUP BY product_name, brand
   HAVING COUNT(DISTINCT price) > 1
 ) test_result;
 ~~~~
@@ -199,9 +199,10 @@ SELECT
     ELSE 'passed'
   END AS test_result
 FROM sales
-WHERE CAST(gross_price AS INT) <> CAST(qty * price AS INT);
+WHERE ROUND(gross_price::NUMERIC, 2) <> ROUND((qty * price)::NUMERIC, 2);
 ~~~~
-> Remarks: Test passed!
+> Remarks: Test failed!
+> 92 records found!
 #####  2.  Check if a bill number has different bill dates.
 ~~~~ sql
 SELECT
@@ -213,11 +214,12 @@ SELECT
 FROM (
   SELECT bill_no, COUNT(DISTINCT bill_date)
   FROM sales
-  GROUP BY bill_no, bill_date
+  GROUP BY bill_no
   HAVING COUNT(DISTINCT bill_date) > 1
 ) test_result;
 ~~~~
-> Remarks: Test passed!
+> Remarks: Test failed!
+> 79 records found.
 #####  3.  Check if a bill has multiple customers.
 ~~~~ sql
 SELECT
@@ -229,11 +231,12 @@ SELECT
 FROM (
   SELECT bill_no, COUNT(DISTINCT customer_id)
   FROM sales
-  GROUP BY bill_no, customer_id
+  GROUP BY bill_no
   HAVING COUNT(DISTINCT customer_id) > 1
 ) test_result;
 ~~~~
-> Remarks: Test passed!
+> Remarks: Test failed!
+> 19 records found.
 #####  4. Check if the tax percent do not match with the tax percent in the product table.
 ~~~~ sql
 SELECT

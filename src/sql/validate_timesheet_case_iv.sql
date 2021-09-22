@@ -9,8 +9,8 @@ SELECT
     ELSE 'passed'
   END AS test_result
 FROM (
-  SELECT COUNT(employee_id), shift_date
+  SELECT employee_id
   FROM timesheet
-  GROUP BY shift_date
-  HAVING AVG(num_teammates_absent) > COUNT(employee_id)
+  GROUP BY employee_id, shift_start_time, shift_end_time, shift_date
+  HAVING COUNT(department_id) > 1
 ) test_result;

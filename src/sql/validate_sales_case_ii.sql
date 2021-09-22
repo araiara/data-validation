@@ -11,6 +11,6 @@ SELECT
 FROM (
   SELECT bill_no, COUNT(DISTINCT bill_date)
   FROM sales
-  GROUP BY bill_no, bill_date
+  GROUP BY bill_no
   HAVING COUNT(DISTINCT bill_date) > 1
 ) test_result;
